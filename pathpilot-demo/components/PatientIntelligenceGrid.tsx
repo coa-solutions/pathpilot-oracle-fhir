@@ -79,7 +79,7 @@ export default function PatientIntelligenceGrid() {
 
   const fetchIntelligenceData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/patient-intelligence');
+      const response = await fetch('/api/fhir/api/patient-intelligence');
       const data = await response.json();
       setData(data);
       setLoading(false);
