@@ -13,10 +13,18 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from cache import (
+    cache_patient_data,
+    cache_fhir_resource,
+    cache_fhir_bundle,
+    get_cache_statistics,
+    clear_all_caches
+)
 
 # Data directory - files are read on-demand, not loaded into memory
 data_dir = "data/mimic-iv-clinical-database-demo-on-fhir-2.1.0/fhir"
 
+@cache_fhir_resource()  # Never expires - static data
 def read_ndjson_file(filepath: str, filter_func=None, limit: int = None):
     """Read NDJSON file from disk with optional filtering"""
     results = []
@@ -142,8 +150,19 @@ async def root():
         "version": "1.0.0",
         "fhirVersion": "4.0.1",
         "implementation": "MIMIC-IV Demo Data",
-        "availableResources": list(FILE_MAPPINGS.keys())
+        "availableResources": list(FILE_MAPPINGS.keys()),
+        "caching": "In-memory cache enabled"
     }
+
+@app.get("/cache/stats")
+async def get_cache_stats():
+    """Get cache statistics"""
+    return get_cache_statistics()
+
+@app.post("/cache/clear")
+async def clear_cache():
+    """Clear all caches (admin endpoint)"""
+    return clear_all_caches()
 
 @app.get("/metadata")
 async def capability_statement():
@@ -172,6 +191,7 @@ async def capability_statement():
 
 # Patient Intelligence endpoint - MUST come before generic routes
 @app.get("/api/patient-intelligence")
+@cache_patient_data()  # Never expires - static data
 async def get_patient_intelligence():
     """Generate patient intelligence from real FHIR data"""
     import random
@@ -404,6 +424,7 @@ async def get_medication_requests(
     return create_bundle(requests, 'MedicationRequest')
 
 @app.get("/patients-summary")
+@cache_patient_data()  # Never expires - static data
 async def get_patients_summary(_count: Optional[int] = Query(100)):
     """Get enriched patient list with metadata for selection"""
     patients = get_resources('Patient', limit=_count)
