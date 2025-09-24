@@ -97,7 +97,7 @@ export class RiskScoreCalculator {
     // Check for AKI markers
     const creatinine = labs.find(l => l.code.toLowerCase().includes('creatinine'));
     if (creatinine && creatinine.status !== 'normal') {
-      const value = parseFloat(creatinine.value);
+      const value = parseFloat(String(creatinine.value));
       if (!isNaN(value) && value > 2.0) {
         markers.push('AKI Risk');
         score += 15;
