@@ -21,4 +21,4 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: "https://pathpilot-api.onrender.com"
       - key: NODE_VERSION
-        value: 18.17.0
+        value: 20.9.0
