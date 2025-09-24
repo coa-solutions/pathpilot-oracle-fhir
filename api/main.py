@@ -1,32 +1,18 @@
 #!/usr/bin/env python3
 """
-Oracle Health Millennium FHIR R4 API Simulator
-Uses MIMIC-IV demo data to simulate Oracle's FHIR endpoints
+PathPilot FHIR API Server
+FHIR R4 compliant API with MIMIC-IV demo data (Oracle Health compatible)
 """
 
 import json
 import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-
-app = FastAPI(
-    title="Oracle Health Millennium FHIR R4 API Simulator",
-    description="POC simulator using MIMIC-IV demo data",
-    version="1.0.0"
-)
-
-# Enable CORS for browser testing
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Data directory - files are read on-demand, not loaded into memory
 data_dir = "data/mimic-iv-clinical-database-demo-on-fhir-2.1.0/fhir"
@@ -117,21 +103,42 @@ def create_bundle(resources: List[Dict], resource_type: str, total: Optional[int
     }
     return bundle
 
-@app.on_event("startup")
-async def startup_event():
-    """Verify data files exist on server start"""
-    print("Oracle FHIR API Starting...")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events"""
+    # Startup
+    print("PathPilot API Starting...")
     print(f"Data directory: {data_dir}")
     if not os.path.exists(data_dir):
         print(f"WARNING: Data directory not found: {data_dir}")
     else:
         print("Data files available - will be read on-demand")
+    yield
+    # Shutdown
+    print("PathPilot API Shutting down...")
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="PathPilot FHIR API Server",
+    description="FHIR R4 API with MIMIC-IV demo data",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Enable CORS for browser testing
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():
     """Root endpoint"""
     return {
-        "name": "Oracle Health Millennium FHIR R4 API Simulator",
+        "name": "PathPilot FHIR API Server",
         "version": "1.0.0",
         "fhirVersion": "4.0.1",
         "implementation": "MIMIC-IV Demo Data",
@@ -477,10 +484,13 @@ async def get_patients_summary(_count: Optional[int] = Query(100)):
 
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("Oracle Health Millennium FHIR R4 API Simulator")
+    print("PathPilot FHIR API Server")
     print("="*60)
     print("\nStarting server...")
     print("\nAPI will be available at: http://localhost:8000")
     print("Interactive docs at: http://localhost:8000/docs")
     print("\nPress Ctrl+C to stop the server")
     print("="*60 + "\n")
+
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
