@@ -107,7 +107,7 @@ export class RiskScoreCalculator {
     // Check for sepsis markers
     const wbc = labs.find(l => l.code.toLowerCase().includes('wbc') || l.code.toLowerCase().includes('white'));
     const lactate = labs.find(l => l.code.toLowerCase().includes('lactate'));
-    if ((wbc && wbc.status === 'critical') || (lactate && parseFloat(lactate.value) > 2)) {
+    if ((wbc && wbc.status === 'critical') || (lactate && parseFloat(String(lactate.value)) > 2)) {
       markers.push('Sepsis Risk');
       score += 20;
     }
@@ -123,7 +123,7 @@ export class RiskScoreCalculator {
     // Check for coagulopathy
     const inr = labs.find(l => l.code.toLowerCase().includes('inr'));
     const plt = labs.find(l => l.code.toLowerCase().includes('platelet') || l.code.toLowerCase().includes('plt'));
-    if ((inr && parseFloat(inr.value) > 2) || (plt && parseFloat(plt.value) < 50)) {
+    if ((inr && parseFloat(String(inr.value)) > 2) || (plt && parseFloat(String(plt.value)) < 50)) {
       markers.push('Coagulopathy');
       score += 15;
     }
@@ -220,9 +220,9 @@ export class RiskScoreCalculator {
 
     if (!bilirubin || !inr || !creatinine) return null;
 
-    const bilirubinValue = parseFloat(bilirubin.value);
-    const inrValue = parseFloat(inr.value);
-    const creatinineValue = parseFloat(creatinine.value);
+    const bilirubinValue = parseFloat(String(bilirubin.value));
+    const inrValue = parseFloat(String(inr.value));
+    const creatinineValue = parseFloat(String(creatinine.value));
 
     if (isNaN(bilirubinValue) || isNaN(inrValue) || isNaN(creatinineValue)) return null;
 
@@ -256,8 +256,8 @@ export class RiskScoreCalculator {
       }
 
       // Check numeric trends for key markers
-      const currentValue = parseFloat(currentLab.value);
-      const previousValue = parseFloat(previousLab.value);
+      const currentValue = parseFloat(String(currentLab.value));
+      const previousValue = parseFloat(String(previousLab.value));
 
       if (!isNaN(currentValue) && !isNaN(previousValue)) {
         const percentChange = ((currentValue - previousValue) / previousValue) * 100;
