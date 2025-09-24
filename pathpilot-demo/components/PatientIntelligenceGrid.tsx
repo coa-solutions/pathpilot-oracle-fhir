@@ -116,7 +116,7 @@ export default function PatientIntelligenceGrid() {
   };
 
   const getFilteredPatients = () => {
-    if (!data) return [];
+    if (!data || !data.patients) return [];
     switch (selectedFilter) {
       case 'critical':
         return data.patients.filter(p => p.intelligence.riskLevel === 'critical');

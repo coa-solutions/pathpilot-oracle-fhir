@@ -525,44 +525,51 @@ async def get_patient_intelligence():
 
     # Build response with patient data
     patients = []
+    patient_list = data_store.get("Patient", [])
+
     for patient_id, intelligence in patient_intelligence.items():
-        if patient_id in data_store.get("Patient", {}):
-            patient = next((p for p in data_store["Patient"] if p.get('id') == patient_id), None)
-            if not patient:
-                continue
+        # Find patient in the list
+        patient = None
+        for p in patient_list:
+            if p.get('id') == patient_id:
+                patient = p
+                break
 
-            # Extract patient demographics
-            name = patient.get("name", [{}])[0]
-            given_name = name.get('given', [''])[0] if name.get('given') else ''
-            family_name = name.get('family', '')
-            display_name = f"{given_name} {family_name}".strip()
-            if not display_name:
-                display_name = f"Patient {patient_id[:8]}"
+        if not patient:
+            continue
 
-            # Get age and gender
-            birth_date = patient.get("birthDate", "")
-            age = 2024 - int(birth_date[:4]) if birth_date and birth_date[:4].isdigit() else 65
-            gender = patient.get("gender", "unknown")
+        # Extract patient demographics
+        name = patient.get("name", [{}])[0]
+        given_name = name.get('given', [''])[0] if name.get('given') else ''
+        family_name = name.get('family', '')
+        display_name = f"{given_name} {family_name}".strip()
+        if not display_name:
+            display_name = f"Patient {patient_id[:8]}"
 
-            # Calculate recent lab velocity (simulated)
-            recent_labs = random.randint(5, 25)
+        # Get age and gender
+        birth_date = patient.get("birthDate", "")
+        age = 2024 - int(birth_date[:4]) if birth_date and birth_date[:4].isdigit() else 65
+        gender = patient.get("gender", "unknown")
 
-            # Get actual observation count for this patient
-            obs_count = len([o for o in data_store.get('Observation', [])
-                           if o.get('subject', {}).get('reference', '').endswith(f"/{patient_id}")][:100])
+        # Calculate recent lab velocity (simulated)
+        recent_labs = random.randint(5, 25)
 
-            patients.append({
-                'id': patient_id,
-                'name': display_name,
-                'age': age,
-                'gender': gender,
-                'mrn': patient_id[:8].upper(),
-                'location': 'ICU-' + str(random.randint(1, 20)) if intelligence['riskLevel'] == 'critical' else 'Floor-' + str(random.randint(1, 50)),
-                'los': random.randint(1, 15),  # Length of stay in days
-                'intelligence': intelligence,
-                'recentLabCount': recent_labs,
-                'labVelocity': 'high' if recent_labs > 15 else 'moderate' if recent_labs > 8 else 'low'
-            })
+        # Get actual observation count for this patient
+        obs_count = len([o for o in data_store.get('Observation', [])
+                       if o.get('subject', {}).get('reference', '').endswith(f"/{patient_id}")][:100])
+
+        patients.append({
+            'id': patient_id,
+            'name': display_name,
+            'age': age,
+            'gender': gender,
+            'mrn': patient_id[:8].upper(),
+            'location': 'ICU-' + str(random.randint(1, 20)) if intelligence['riskLevel'] == 'critical' else 'Floor-' + str(random.randint(1, 50)),
+            'los': random.randint(1, 15),  # Length of stay in days
+            'intelligence': intelligence,
+            'recentLabCount': recent_labs,
+            'labVelocity': 'high' if recent_labs > 15 else 'moderate' if recent_labs > 8 else 'low'
+        })
 
     # Sort by risk score
     patients.sort(key=lambda x: x['intelligence']['riskScore'], reverse=True)

@@ -1,5 +1,5 @@
-import LabDashboard from '@/components/LabDashboard';
+import PatientIntelligenceGrid from '@/components/PatientIntelligenceGrid';
 
 export default function Home() {
-  return <LabDashboard />;
+  return <PatientIntelligenceGrid />;
 }

@@ -5,7 +5,6 @@ import { FHIRClient } from '@/lib/fhir-client';
 import { LabProcessor } from '@/lib/lab-processor';
 import { Patient, LabResult, LabTrend, DiagnosticReport } from '@/lib/types';
 import PatientHeader from './PatientHeader';
-import PatientList from './PatientList';
 import CriticalAlerts from './CriticalAlerts';
 import LabTrendChart from './LabTrendChart';
 import LabCard from './LabCard';
@@ -100,21 +99,11 @@ export default function LabDashboard({ initialPatientId }: LabDashboardProps = {
         </div>
       )}
 
-      {/* Main Content Area with Sidebar */}
+      {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className={`grid grid-cols-1 ${!initialPatientId ? 'lg:grid-cols-4' : ''} gap-6`}>
-          {/* Patient List Sidebar - Only show if not in single patient mode */}
-          {!initialPatientId && (
-            <div className="lg:col-span-1">
-              <PatientList
-                currentPatientId={currentPatientId}
-                onPatientSelect={handlePatientChange}
-              />
-            </div>
-          )}
-
+        <div className="grid grid-cols-1 gap-6">
           {/* Main Dashboard Content */}
-          <div className={!initialPatientId ? "lg:col-span-3" : ""}>
+          <div>
             {/* Patient Header */}
             <PatientHeader patient={patient} loading={loading} />
 
