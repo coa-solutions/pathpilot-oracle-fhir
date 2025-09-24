@@ -177,8 +177,8 @@ async def get_patient_intelligence():
     import random
     from datetime import datetime
 
-    # Get real patients from FHIR data
-    patients_data = get_resources('Patient', limit=20)
+    # Get ALL real patients from FHIR data
+    patients_data = get_resources('Patient')  # No limit - get all patients
 
     # Generate intelligence for each patient based on their actual data
     patient_list = []
@@ -186,15 +186,15 @@ async def get_patient_intelligence():
     for idx, patient in enumerate(patients_data):
         patient_id = patient.get('id', '')
 
-        # Get real observations for this patient
+        # Get ALL real observations for this patient
         observations = get_resources('Observation',
-                                    lambda o: o.get('subject', {}).get('reference', '').endswith(f"/{patient_id}"),
-                                    limit=50)
+                                    lambda o: o.get('subject', {}).get('reference', '').endswith(f"/{patient_id}"))
+                                    # No limit - get all observations
 
-        # Get real conditions for this patient
+        # Get ALL real conditions for this patient
         conditions = get_resources('Condition',
-                                 lambda c: c.get('subject', {}).get('reference', '').endswith(f"/{patient_id}"),
-                                 limit=10)
+                                 lambda c: c.get('subject', {}).get('reference', '').endswith(f"/{patient_id}"))
+                                 # No limit - get all conditions
 
         # Count critical and abnormal labs from real data
         critical_count = 0
