@@ -32,23 +32,68 @@ app.add_middleware(
 data_store: Dict[str, List[Dict]] = {}
 data_dir = "data/mimic-iv-clinical-database-demo-on-fhir-2.1.0/fhir"
 
-def load_ndjson_file(filepath: str, resource_type: str):
-    """Load NDJSON file into memory"""
+def load_ndjson_file(filepath: str, resource_type: str, max_records: Optional[int] = None):
+    """Load NDJSON file into memory with optional limit"""
     resources = []
     try:
         with open(filepath, 'r') as f:
-            for line in f:
+            for line_num, line in enumerate(f):
+                if max_records and line_num >= max_records:
+                    break
                 if line.strip():
                     resource = json.loads(line)
                     resources.append(resource)
-        print(f"Loaded {len(resources)} {resource_type} resources")
+
+        filename = os.path.basename(filepath)
+        if max_records and len(resources) == max_records:
+            print(f"Loaded {len(resources)} (limited) {filename} resources")
+        else:
+            print(f"Loaded {len(resources)} {filename} resources")
     except Exception as e:
         print(f"Error loading {filepath}: {e}")
     return resources
 
 def initialize_data():
-    """Load all MIMIC data into memory"""
-    print("Loading MIMIC-IV FHIR data...")
+    """Load MIMIC data into memory with smart sampling for memory efficiency"""
+    print("Loading MIMIC-IV FHIR data (optimized for Render)...")
+
+    # Smart resource limits to fit in 512MB memory
+    # Priority: Keep all small resources, sample large observation files
+    resource_limits = {
+        'MimicPatient.ndjson': None,  # Load all (100 patients)
+        'MimicOrganization.ndjson': None,  # Load all (small)
+        'MimicLocation.ndjson': None,  # Load all (small)
+        'MimicEncounter.ndjson': None,  # Load all encounters
+        'MimicEncounterED.ndjson': None,
+        'MimicEncounterICU.ndjson': None,
+        'MimicCondition.ndjson': None,  # Load all conditions
+        'MimicConditionED.ndjson': None,
+        # Sample observations - these are the memory hogs
+        'MimicObservationLabevents.ndjson': 5000,  # Priority for lab demo (was 107K)
+        'MimicObservationChartevents.ndjson': 2000,  # Sample chart events (was 668K!)
+        'MimicObservationVitalSignsED.ndjson': 1000,  # Sample vitals
+        'MimicObservationDatetimeevents.ndjson': 1000,
+        'MimicObservationOutputevents.ndjson': 500,
+        'MimicObservationED.ndjson': 500,
+        'MimicObservationMicroTest.ndjson': None,  # Small, keep all
+        'MimicObservationMicroOrg.ndjson': None,  # Small, keep all
+        'MimicObservationMicroSusc.ndjson': None,  # Small, keep all
+        # Sample medication data
+        'MimicMedicationRequest.ndjson': 2000,
+        'MimicMedicationAdministration.ndjson': 1000,
+        'MimicMedicationAdministrationICU.ndjson': 1000,
+        'MimicMedicationDispense.ndjson': 1000,
+        'MimicMedicationDispenseED.ndjson': None,  # Small enough
+        'MimicMedicationStatementED.ndjson': None,
+        # Keep all other resources
+        'MimicProcedure.ndjson': None,
+        'MimicProcedureED.ndjson': None,
+        'MimicProcedureICU.ndjson': None,
+        'MimicMedication.ndjson': None,
+        'MimicMedicationMix.ndjson': None,
+        'MimicSpecimen.ndjson': None,
+        'MimicSpecimenLab.ndjson': 1000  # Sample specimens
+    }
 
     # Map MIMIC files to FHIR resource types
     file_mappings = {
@@ -82,7 +127,8 @@ def initialize_data():
         for filename in files:
             filepath = os.path.join(data_dir, filename)
             if os.path.exists(filepath):
-                resources = load_ndjson_file(filepath, resource_type)
+                max_records = resource_limits.get(filename)
+                resources = load_ndjson_file(filepath, resource_type, max_records)
                 data_store[resource_type].extend(resources)
 
     print(f"\nData loaded successfully!")
