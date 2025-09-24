@@ -28,113 +28,73 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Data storage
-data_store: Dict[str, List[Dict]] = {}
+# Data directory - files are read on-demand, not loaded into memory
 data_dir = "data/mimic-iv-clinical-database-demo-on-fhir-2.1.0/fhir"
 
-def load_ndjson_file(filepath: str, resource_type: str, max_records: Optional[int] = None):
-    """Load NDJSON file into memory with optional limit"""
-    resources = []
+def read_ndjson_file(filepath: str, filter_func=None, limit: int = None):
+    """Read NDJSON file from disk with optional filtering"""
+    results = []
     try:
         with open(filepath, 'r') as f:
-            for line_num, line in enumerate(f):
-                if max_records and line_num >= max_records:
+            for line in f:
+                if limit and len(results) >= limit:
                     break
                 if line.strip():
                     resource = json.loads(line)
-                    resources.append(resource)
-
-        filename = os.path.basename(filepath)
-        if max_records and len(resources) == max_records:
-            print(f"Loaded {len(resources)} (limited) {filename} resources")
-        else:
-            print(f"Loaded {len(resources)} {filename} resources")
+                    if filter_func is None or filter_func(resource):
+                        results.append(resource)
+                        if limit and len(results) >= limit:
+                            break
+    except FileNotFoundError:
+        pass  # File doesn't exist, return empty list
     except Exception as e:
-        print(f"Error loading {filepath}: {e}")
-    return resources
+        print(f"Error reading {filepath}: {e}")
+    return results
 
-def initialize_data():
-    """Load MIMIC data into memory with smart sampling for memory efficiency"""
-    print("Loading MIMIC-IV FHIR data (optimized for Render)...")
+# File mappings for each resource type
+FILE_MAPPINGS = {
+    'Patient': ['MimicPatient.ndjson'],
+    'Organization': ['MimicOrganization.ndjson'],
+    'Location': ['MimicLocation.ndjson'],
+    'Encounter': ['MimicEncounter.ndjson', 'MimicEncounterED.ndjson', 'MimicEncounterICU.ndjson'],
+    'Condition': ['MimicCondition.ndjson', 'MimicConditionED.ndjson'],
+    'Observation': [
+        'MimicObservationLabevents.ndjson',
+        'MimicObservationChartevents.ndjson',
+        'MimicObservationDatetimeevents.ndjson',
+        'MimicObservationOutputevents.ndjson',
+        'MimicObservationED.ndjson',
+        'MimicObservationVitalSignsED.ndjson',
+        'MimicObservationMicroTest.ndjson',
+        'MimicObservationMicroOrg.ndjson',
+        'MimicObservationMicroSusc.ndjson'
+    ],
+    'Procedure': ['MimicProcedure.ndjson', 'MimicProcedureED.ndjson', 'MimicProcedureICU.ndjson'],
+    'Medication': ['MimicMedication.ndjson', 'MimicMedicationMix.ndjson'],
+    'MedicationRequest': ['MimicMedicationRequest.ndjson'],
+    'MedicationAdministration': ['MimicMedicationAdministration.ndjson', 'MimicMedicationAdministrationICU.ndjson'],
+    'MedicationDispense': ['MimicMedicationDispense.ndjson', 'MimicMedicationDispenseED.ndjson'],
+    'MedicationStatement': ['MimicMedicationStatementED.ndjson'],
+    'Specimen': ['MimicSpecimen.ndjson', 'MimicSpecimenLab.ndjson']
+}
 
-    # Smart resource limits to fit in 512MB memory
-    # Priority: Keep all small resources, sample large observation files
-    resource_limits = {
-        'MimicPatient.ndjson': None,  # Load all (100 patients)
-        'MimicOrganization.ndjson': None,  # Load all (small)
-        'MimicLocation.ndjson': None,  # Load all (small)
-        'MimicEncounter.ndjson': None,  # Load all encounters
-        'MimicEncounterED.ndjson': None,
-        'MimicEncounterICU.ndjson': None,
-        'MimicCondition.ndjson': None,  # Load all conditions
-        'MimicConditionED.ndjson': None,
-        # Sample observations - these are the memory hogs
-        'MimicObservationLabevents.ndjson': 5000,  # Priority for lab demo (was 107K)
-        'MimicObservationChartevents.ndjson': 2000,  # Sample chart events (was 668K!)
-        'MimicObservationVitalSignsED.ndjson': 1000,  # Sample vitals
-        'MimicObservationDatetimeevents.ndjson': 1000,
-        'MimicObservationOutputevents.ndjson': 500,
-        'MimicObservationED.ndjson': 500,
-        'MimicObservationMicroTest.ndjson': None,  # Small, keep all
-        'MimicObservationMicroOrg.ndjson': None,  # Small, keep all
-        'MimicObservationMicroSusc.ndjson': None,  # Small, keep all
-        # Sample medication data
-        'MimicMedicationRequest.ndjson': 2000,
-        'MimicMedicationAdministration.ndjson': 1000,
-        'MimicMedicationAdministrationICU.ndjson': 1000,
-        'MimicMedicationDispense.ndjson': 1000,
-        'MimicMedicationDispenseED.ndjson': None,  # Small enough
-        'MimicMedicationStatementED.ndjson': None,
-        # Keep all other resources
-        'MimicProcedure.ndjson': None,
-        'MimicProcedureED.ndjson': None,
-        'MimicProcedureICU.ndjson': None,
-        'MimicMedication.ndjson': None,
-        'MimicMedicationMix.ndjson': None,
-        'MimicSpecimen.ndjson': None,
-        'MimicSpecimenLab.ndjson': 1000  # Sample specimens
-    }
+def get_resources(resource_type: str, filter_func=None, limit: int = None):
+    """Read resources from disk for a given type with optional filtering"""
+    results = []
+    files = FILE_MAPPINGS.get(resource_type, [])
 
-    # Map MIMIC files to FHIR resource types
-    file_mappings = {
-        'Patient': ['MimicPatient.ndjson'],
-        'Organization': ['MimicOrganization.ndjson'],
-        'Location': ['MimicLocation.ndjson'],
-        'Encounter': ['MimicEncounter.ndjson', 'MimicEncounterED.ndjson', 'MimicEncounterICU.ndjson'],
-        'Condition': ['MimicCondition.ndjson', 'MimicConditionED.ndjson'],
-        'Observation': [
-            'MimicObservationLabevents.ndjson',
-            'MimicObservationChartevents.ndjson',
-            'MimicObservationDatetimeevents.ndjson',
-            'MimicObservationOutputevents.ndjson',
-            'MimicObservationED.ndjson',
-            'MimicObservationVitalSignsED.ndjson',
-            'MimicObservationMicroTest.ndjson',
-            'MimicObservationMicroOrg.ndjson',
-            'MimicObservationMicroSusc.ndjson'
-        ],
-        'Procedure': ['MimicProcedure.ndjson', 'MimicProcedureED.ndjson', 'MimicProcedureICU.ndjson'],
-        'Medication': ['MimicMedication.ndjson', 'MimicMedicationMix.ndjson'],
-        'MedicationRequest': ['MimicMedicationRequest.ndjson'],
-        'MedicationAdministration': ['MimicMedicationAdministration.ndjson', 'MimicMedicationAdministrationICU.ndjson'],
-        'MedicationDispense': ['MimicMedicationDispense.ndjson', 'MimicMedicationDispenseED.ndjson'],
-        'MedicationStatement': ['MimicMedicationStatementED.ndjson'],
-        'Specimen': ['MimicSpecimen.ndjson', 'MimicSpecimenLab.ndjson']
-    }
+    for filename in files:
+        if limit and len(results) >= limit:
+            break
+        filepath = os.path.join(data_dir, filename)
+        file_results = read_ndjson_file(
+            filepath,
+            filter_func,
+            limit - len(results) if limit else None
+        )
+        results.extend(file_results)
 
-    for resource_type, files in file_mappings.items():
-        data_store[resource_type] = []
-        for filename in files:
-            filepath = os.path.join(data_dir, filename)
-            if os.path.exists(filepath):
-                max_records = resource_limits.get(filename)
-                resources = load_ndjson_file(filepath, resource_type, max_records)
-                data_store[resource_type].extend(resources)
-
-    print(f"\nData loaded successfully!")
-    for resource_type, resources in data_store.items():
-        if resources:
-            print(f"  {resource_type}: {len(resources)} resources")
+    return results[:limit] if limit else results
 
 def create_bundle(resources: List[Dict], resource_type: str, total: Optional[int] = None) -> Dict:
     """Create a FHIR Bundle response"""
@@ -159,8 +119,13 @@ def create_bundle(resources: List[Dict], resource_type: str, total: Optional[int
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize data on server start"""
-    initialize_data()
+    """Verify data files exist on server start"""
+    print("Oracle FHIR API Starting...")
+    print(f"Data directory: {data_dir}")
+    if not os.path.exists(data_dir):
+        print(f"WARNING: Data directory not found: {data_dir}")
+    else:
+        print("Data files available - will be read on-demand")
 
 @app.get("/")
 async def root():
@@ -170,7 +135,7 @@ async def root():
         "version": "1.0.0",
         "fhirVersion": "4.0.1",
         "implementation": "MIMIC-IV Demo Data",
-        "availableResources": list(data_store.keys())
+        "availableResources": list(FILE_MAPPINGS.keys())
     }
 
 @app.get("/metadata")
@@ -193,7 +158,7 @@ async def capability_statement():
                         {"code": "search-type"}
                     ]
                 }
-                for resource_type in data_store.keys()
+                for resource_type in FILE_MAPPINGS.keys()
             ]
         }]
     }
@@ -202,42 +167,45 @@ async def capability_statement():
 
 # Generic resource endpoints
 @app.get("/{resource_type}")
-async def get_resources(
+async def get_resources_generic(
     resource_type: str,
     patient: Optional[str] = Query(None),
     _count: Optional[int] = Query(100)
 ):
     """Get all resources of a type with optional filtering"""
-    if resource_type not in data_store:
+    if resource_type not in FILE_MAPPINGS:
         raise HTTPException(status_code=404, detail=f"Resource type {resource_type} not found")
 
-    resources = data_store[resource_type]
-
-    # Filter by patient if specified
+    # Create filter function if patient specified
+    filter_func = None
     if patient:
-        filtered = []
-        for r in resources:
+        def filter_func(r):
             # Check various patient reference fields
             if 'patient' in r and r['patient'].get('reference', '').endswith(f"/{patient}"):
-                filtered.append(r)
+                return True
             elif 'subject' in r and r['subject'].get('reference', '').endswith(f"/{patient}"):
-                filtered.append(r)
-        resources = filtered
+                return True
+            return False
 
-    # Limit results
-    resources = resources[:_count]
+    # Read from disk with filtering
+    resources = get_resources(resource_type, filter_func, _count)
 
     return create_bundle(resources, resource_type)
 
 @app.get("/{resource_type}/{resource_id}")
 async def get_resource_by_id(resource_type: str, resource_id: str):
     """Get a specific resource by ID"""
-    if resource_type not in data_store:
+    if resource_type not in FILE_MAPPINGS:
         raise HTTPException(status_code=404, detail=f"Resource type {resource_type} not found")
 
-    for resource in data_store[resource_type]:
-        if resource.get('id') == resource_id:
-            return resource
+    # Read from disk until we find the matching ID
+    def filter_func(r):
+        return r.get('id') == resource_id
+
+    resources = get_resources(resource_type, filter_func, limit=1)
+
+    if resources:
+        return resources[0]
 
     raise HTTPException(status_code=404, detail=f"{resource_type}/{resource_id} not found")
 
@@ -245,15 +213,15 @@ async def get_resource_by_id(resource_type: str, resource_id: str):
 @app.get("/Patient")
 async def get_patients(_count: Optional[int] = Query(100)):
     """Get all patients"""
-    patients = data_store.get('Patient', [])[:_count]
+    patients = get_resources('Patient', limit=_count)
     return create_bundle(patients, 'Patient')
 
 @app.get("/Patient/{patient_id}")
 async def get_patient(patient_id: str):
     """Get specific patient"""
-    for patient in data_store.get('Patient', []):
-        if patient.get('id') == patient_id:
-            return patient
+    patients = get_resources('Patient', lambda p: p.get('id') == patient_id, limit=1)
+    if patients:
+        return patients[0]
     raise HTTPException(status_code=404, detail=f"Patient/{patient_id} not found")
 
 @app.get("/Encounter")
@@ -262,13 +230,12 @@ async def get_encounters(
     _count: Optional[int] = Query(100)
 ):
     """Get encounters with optional patient filter"""
-    encounters = data_store.get('Encounter', [])
-
+    filter_func = None
     if patient:
-        encounters = [e for e in encounters
-                     if e.get('subject', {}).get('reference', '').endswith(f"/{patient}")]
+        filter_func = lambda e: e.get('subject', {}).get('reference', '').endswith(f"/{patient}")
 
-    return create_bundle(encounters[:_count], 'Encounter')
+    encounters = get_resources('Encounter', filter_func, _count)
+    return create_bundle(encounters, 'Encounter')
 
 @app.get("/Observation")
 async def get_observations(
@@ -277,18 +244,19 @@ async def get_observations(
     _count: Optional[int] = Query(100)
 ):
     """Get observations with optional filters"""
-    observations = data_store.get('Observation', [])
+    def filter_func(o):
+        # Apply patient filter
+        if patient and not o.get('subject', {}).get('reference', '').endswith(f"/{patient}"):
+            return False
+        # Apply category filter
+        if category and not any(cat.get('coding', [{}])[0].get('code') == category
+                              for cat in o.get('category', [])):
+            return False
+        return True
 
-    if patient:
-        observations = [o for o in observations
-                       if o.get('subject', {}).get('reference', '').endswith(f"/{patient}")]
-
-    if category:
-        observations = [o for o in observations
-                       if any(cat.get('coding', [{}])[0].get('code') == category
-                              for cat in o.get('category', []))]
-
-    return create_bundle(observations[:_count], 'Observation')
+    filter_func = filter_func if (patient or category) else None
+    observations = get_resources('Observation', filter_func, _count)
+    return create_bundle(observations, 'Observation')
 
 @app.get("/Condition")
 async def get_conditions(
@@ -296,13 +264,12 @@ async def get_conditions(
     _count: Optional[int] = Query(100)
 ):
     """Get conditions with optional patient filter"""
-    conditions = data_store.get('Condition', [])
-
+    filter_func = None
     if patient:
-        conditions = [c for c in conditions
-                     if c.get('subject', {}).get('reference', '').endswith(f"/{patient}")]
+        filter_func = lambda c: c.get('subject', {}).get('reference', '').endswith(f"/{patient}")
 
-    return create_bundle(conditions[:_count], 'Condition')
+    conditions = get_resources('Condition', filter_func, _count)
+    return create_bundle(conditions, 'Condition')
 
 @app.get("/MedicationRequest")
 async def get_medication_requests(
@@ -310,18 +277,17 @@ async def get_medication_requests(
     _count: Optional[int] = Query(100)
 ):
     """Get medication requests with optional patient filter"""
-    requests = data_store.get('MedicationRequest', [])
-
+    filter_func = None
     if patient:
-        requests = [m for m in requests
-                   if m.get('subject', {}).get('reference', '').endswith(f"/{patient}")]
+        filter_func = lambda m: m.get('subject', {}).get('reference', '').endswith(f"/{patient}")
 
-    return create_bundle(requests[:_count], 'MedicationRequest')
+    requests = get_resources('MedicationRequest', filter_func, _count)
+    return create_bundle(requests, 'MedicationRequest')
 
 @app.get("/patients-summary")
 async def get_patients_summary(_count: Optional[int] = Query(100)):
     """Get enriched patient list with metadata for selection"""
-    patients = data_store.get('Patient', [])[:_count]
+    patients = get_resources('Patient', limit=_count)
 
     patient_summaries = []
 
@@ -348,20 +314,23 @@ async def get_patients_summary(_count: Optional[int] = Query(100)):
             clinical_label = high_volume_patients[patient_id]['label']
             data_quality = 'excellent' if obs_count > 30000 else 'good'
         else:
-            # For other patients, get actual counts (limited for performance)
-            observations = [o for o in data_store.get('Observation', [])
-                          if o.get('subject', {}).get('reference', '').endswith(f"/{patient_id}")][:100]
+            # For other patients, estimate counts (reading minimal data)
+            observations = get_resources('Observation',
+                                       lambda o: o.get('subject', {}).get('reference', '').endswith(f"/{patient_id}"),
+                                       limit=100)
             obs_count = len(observations)
             clinical_label = 'Standard patient'
             data_quality = 'moderate' if obs_count < 1000 else 'good'
 
         # Get encounter count
-        encounters = [e for e in data_store.get('Encounter', [])
-                     if e.get('subject', {}).get('reference', '').endswith(f"/{patient_id}")]
+        encounters = get_resources('Encounter',
+                                  lambda e: e.get('subject', {}).get('reference', '').endswith(f"/{patient_id}"),
+                                  limit=10)  # Just count a few for summary
 
         # Get conditions (top 3)
-        conditions = [c for c in data_store.get('Condition', [])
-                     if c.get('subject', {}).get('reference', '').endswith(f"/{patient_id}")][:3]
+        conditions = get_resources('Condition',
+                                 lambda c: c.get('subject', {}).get('reference', '').endswith(f"/{patient_id}"),
+                                 limit=3)
 
         # Calculate age from birthDate
         birth_date = patient.get('birthDate', '')
