@@ -1,15 +1,15 @@
 {
-  "name": "pathpilot-mimic-integration",
+  "name": "pathpilot-platform",
   "version": "1.0.0",
-  "description": "PathPilot Lab Intelligence with MIMIC-IV FHIR Data",
+  "description": "PathPilot Clinical Lab Intelligence Platform",
   "scripts": {
-    "dev": "concurrently --kill-others --names \"FHIR-API,PathPilot-UI\" -c \"bgBlue.bold,bgGreen.bold\" \"npm:dev:fhir\" \"npm:dev:ui\"",
-    "dev:fhir": "cd backend && python3 oracle_fhir_api.py",
-    "dev:ui": "cd pathpilot-demo && npm run dev",
-    "start": "concurrently --kill-others --names \"FHIR-API,PathPilot-UI\" -c \"bgBlue.bold,bgGreen.bold\" \"npm:start:fhir\" \"npm:start:ui\"",
-    "start:fhir": "cd backend && python3 oracle_fhir_api.py",
-    "start:ui": "cd pathpilot-demo && npm start",
-    "install:deps": "pip3 install -r backend/requirements.txt && cd pathpilot-demo && npm install"
+    "dev": "concurrently --kill-others --names \"API,Web\" -c \"bgBlue.bold,bgGreen.bold\" \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "cd api && python3 main.py",
+    "dev:web": "cd web && npm run dev",
+    "start": "concurrently --kill-others --names \"API,Web\" -c \"bgBlue.bold,bgGreen.bold\" \"npm:start:api\" \"npm:start:web\"",
+    "start:api": "cd api && python3 main.py",
+    "start:web": "cd web && npm start",
+    "install:deps": "pip3 install -r api/requirements.txt && cd web && npm install"
   },
   "keywords": [
     "fhir",

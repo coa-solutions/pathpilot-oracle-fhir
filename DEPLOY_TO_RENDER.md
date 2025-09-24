@@ -1,8 +1,8 @@
-# Deploy to Render
+# Deploy PathPilot Platform to Render
 
 ## Quick Deployment Steps
 
-Your repository is ready for deployment on Render with both the backend API and Next.js frontend.
+Your repository is ready for deployment on Render with both the API and Web services.
 
 ### 1. Go to Render Dashboard
 Visit [https://dashboard.render.com](https://dashboard.render.com)
@@ -14,21 +14,21 @@ Visit [https://dashboard.render.com](https://dashboard.render.com)
 
 ### 3. Configure Services
 The blueprint will create two services:
-- **pathpilot-api**: Python FastAPI backend
-- **pathpilot-frontend**: Next.js frontend
+- **pathpilot-api**: Python FastAPI with FHIR endpoints
+- **pathpilot-web**: Next.js dashboard
 
 ### 4. Update Environment Variables
 After deployment, update these in the Render dashboard:
 
 #### For pathpilot-api:
-- `CORS_ORIGINS`: Update to match your frontend URL (e.g., `https://pathpilot-frontend-xyz.onrender.com`)
+- `CORS_ORIGINS`: Update to match your frontend URL (e.g., `https://pathpilot-web-xyz.onrender.com`)
 
-#### For pathpilot-frontend:
+#### For pathpilot-web:
 - `NEXT_PUBLIC_API_URL`: Update to match your backend URL (e.g., `https://pathpilot-api-xyz.onrender.com`)
 
 ### 5. Verify Deployment
 Once deployed, you can access:
-- Frontend: `https://pathpilot-frontend-[your-id].onrender.com`
+- Web Dashboard: `https://pathpilot-web-[your-id].onrender.com`
 - API Docs: `https://pathpilot-api-[your-id].onrender.com/docs`
 
 ## Service Details

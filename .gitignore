@@ -11,6 +11,11 @@ ENV/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Backup files
+*.bak
+*.unused
+*.backup
+
 # Build outputs
 .next/
 out/

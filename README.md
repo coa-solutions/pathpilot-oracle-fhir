@@ -1,11 +1,11 @@
-# PathPilot Lab Intelligence Platform
+# PathPilot Platform
 
-A modern lab intelligence platform integrating Oracle Health Millennium FHIR API with MIMIC-IV demo data.
+Clinical Lab Intelligence Platform with FHIR-compliant API and real-time monitoring dashboard.
 
 ## Architecture
 
-- **Backend**: FastAPI server simulating Oracle FHIR R4 endpoints
-- **Frontend**: Next.js dashboard for real-time lab visualization
+- **API**: FastAPI server with FHIR R4 endpoints (Oracle Health compatible)
+- **Web**: Next.js dashboard for real-time lab visualization and patient intelligence
 - **Data**: MIMIC-IV clinical demo dataset (100 patients, 813K observations)
 
 ## Quick Start
@@ -21,8 +21,8 @@ A modern lab intelligence platform integrating Oracle Health Millennium FHIR API
 npm run install:deps
 
 # Or manually:
-pip install -r backend/requirements.txt
-cd pathpilot-demo && npm install
+pip install -r api/requirements.txt
+cd web && npm install
 ```
 
 ### Development
@@ -32,7 +32,7 @@ cd pathpilot-demo && npm install
 npm run dev
 
 # Or use the shell script
-./run_pathpilot.sh
+./scripts/dev.sh
 ```
 
 - API Server: http://localhost:8000
@@ -41,32 +41,25 @@ npm run dev
 
 ## Deployment
 
-### Vercel (Frontend)
+### Render (Recommended)
 
-The Next.js frontend can be deployed directly to Vercel:
-
-```bash
-cd pathpilot-demo
-vercel
-```
-
-### Render (Backend)
-
-Deploy the FastAPI backend to Render using the `deploy/render.yaml` configuration.
+Both services deploy together using the `render.yaml` configuration:
+1. Push to GitHub
+2. Connect repository in Render Dashboard
+3. Render auto-detects configuration and deploys both services
 
 ### Environment Variables
 
-Create `.env` files for each environment:
+Configure in Render Dashboard after deployment:
 
-#### Backend (.env)
+#### API Service
 ```
-PORT=8000
-CORS_ORIGINS=["https://your-frontend-domain.vercel.app"]
+CORS_ORIGINS=["https://pathpilot-web.onrender.com"]
 ```
 
-#### Frontend (.env.local)
+#### Web Service
 ```
-NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
+NEXT_PUBLIC_API_URL=https://pathpilot-api.onrender.com
 ```
 
 ## API Endpoints
