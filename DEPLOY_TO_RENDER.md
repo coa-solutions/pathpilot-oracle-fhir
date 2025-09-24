@@ -9,7 +9,7 @@ Visit [https://dashboard.render.com](https://dashboard.render.com)
 
 ### 2. Create New Blueprint
 - Click "New +" → "Blueprint"
-- Connect your GitHub repository: `ariperez/pathpilot-oracle-fhir`
+- Connect your GitHub repository: `coa-solutions/pathpilot-oracle-fhir`
 - Render will auto-detect the `render.yaml` file
 
 ### 3. Configure Services
@@ -57,12 +57,12 @@ Once deployed, you can access:
 3. Ensure both services are running
 
 ## GitHub Repository
-https://github.com/ariperez/pathpilot-oracle-fhir
+https://github.com/coa-solutions/pathpilot-oracle-fhir
 
 ## Local Development
 ```bash
 # Clone with LFS support
-git lfs clone https://github.com/ariperez/pathpilot-oracle-fhir.git
+git lfs clone https://github.com/coa-solutions/pathpilot-oracle-fhir.git
 
 # Install and run
 npm run install:deps

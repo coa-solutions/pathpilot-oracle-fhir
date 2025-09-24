@@ -526,6 +526,7 @@ async def get_patient_intelligence():
     # Build response with patient data
     patients = []
     patient_list = data_store.get("Patient", [])
+    print(f"DEBUG: Found {len(patient_list)} patients in data store")
 
     for patient_id, intelligence in patient_intelligence.items():
         # Find patient in the list
@@ -536,7 +537,10 @@ async def get_patient_intelligence():
                 break
 
         if not patient:
+            print(f"DEBUG: Could not find patient {patient_id}")
             continue
+        else:
+            print(f"DEBUG: Found patient {patient_id}")
 
         # Extract patient demographics
         name = patient.get("name", [{}])[0]
