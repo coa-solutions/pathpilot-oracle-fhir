@@ -343,6 +343,240 @@ async def get_patients_summary(_count: Optional[int] = Query(100)):
         'patients': patient_summaries
     }
 
+@app.get("/api/patient-intelligence")
+async def get_patient_intelligence():
+    """Get patient intelligence data with risk scores and AI insights"""
+    import random
+    from datetime import timedelta
+
+    # Pre-computed intelligence data for high-value patients
+    patient_intelligence = {
+        '77e10fd0-6a1c-5547-a130-fae1341acf36': {
+            'riskScore': 95,
+            'riskLevel': 'critical',
+            'criticalLabs': 12,
+            'abnormalLabs': 47,
+            'deteriorating': True,
+            'primaryConcern': 'Multi-organ failure progression',
+            'alerts': ['AKI Stage 3', 'Septic shock', 'Liver failure'],
+            'trends': {'renal': 'worsening', 'hepatic': 'worsening', 'cardiac': 'stable'},
+            'lastUpdate': '2 min ago',
+            'predictedDisposition': 'ICU - Extended stay',
+            'aiInsights': [
+                'Creatinine rising 0.5 mg/dL/day - dialysis likely within 24h',
+                'Lactate trend suggests worsening tissue perfusion',
+                'Consider hepatology consult for rising bilirubin'
+            ]
+        },
+        '73fb53d8-f1fa-53cd-a25c-2314caccbb99': {
+            'riskScore': 72,
+            'riskLevel': 'high',
+            'criticalLabs': 3,
+            'abnormalLabs': 28,
+            'deteriorating': False,
+            'primaryConcern': 'Post-operative arrhythmia',
+            'alerts': ['AFib with RVR', 'Elevated troponin'],
+            'trends': {'cardiac': 'improving', 'renal': 'stable', 'respiratory': 'stable'},
+            'lastUpdate': '15 min ago',
+            'predictedDisposition': 'Step-down unit tomorrow',
+            'aiInsights': [
+                'Troponin trending down - post-op peak likely passed',
+                'Consider amiodarone if rate control inadequate',
+                'Hemoglobin stable - no active bleeding'
+            ]
+        },
+        '8e77dd0b-932d-5790-9ba6-5c6df8434457': {
+            'riskScore': 88,
+            'riskLevel': 'critical',
+            'criticalLabs': 8,
+            'abnormalLabs': 35,
+            'deteriorating': True,
+            'primaryConcern': 'Worsening respiratory failure',
+            'alerts': ['P/F ratio < 100', 'Rising lactate', 'Possible VAP'],
+            'trends': {'respiratory': 'worsening', 'infectious': 'worsening', 'renal': 'stable'},
+            'lastUpdate': '5 min ago',
+            'predictedDisposition': 'Prone positioning likely',
+            'aiInsights': [
+                'WBC trend and fever curve suggest ventilator-associated pneumonia',
+                'Consider bronchoscopy for culture',
+                'ECMO team awareness recommended'
+            ]
+        },
+        'e1de99bc-3bc5-565e-9ee6-69675b9cc267': {
+            'riskScore': 65,
+            'riskLevel': 'high',
+            'criticalLabs': 4,
+            'abnormalLabs': 22,
+            'deteriorating': False,
+            'primaryConcern': 'DKA partially resolved',
+            'alerts': ['Anion gap closing', 'K+ needs repletion'],
+            'trends': {'metabolic': 'improving', 'renal': 'stable', 'electrolytes': 'improving'},
+            'lastUpdate': '30 min ago',
+            'predictedDisposition': 'Floor transfer today',
+            'aiInsights': [
+                'Anion gap normalizing - transition to SubQ insulin appropriate',
+                'Potassium 3.2 - increase repletion rate',
+                'No signs of cerebral edema'
+            ]
+        },
+        '4365e125-c049-525a-9459-16d5e6947ad2': {
+            'riskScore': 78,
+            'riskLevel': 'high',
+            'criticalLabs': 5,
+            'abnormalLabs': 31,
+            'deteriorating': True,
+            'primaryConcern': 'CKD progression to Stage 5',
+            'alerts': ['eGFR < 15', 'Hyperkalemia', 'Metabolic acidosis'],
+            'trends': {'renal': 'worsening', 'electrolytes': 'unstable', 'acid-base': 'worsening'},
+            'lastUpdate': '10 min ago',
+            'predictedDisposition': 'Dialysis initiation',
+            'aiInsights': [
+                'Urgent nephrology consult for dialysis planning',
+                'K+ 5.8 - consider kayexalate or emergent dialysis',
+                'Volume overload developing - diuretics ineffective'
+            ]
+        },
+        '4f773083-7f4d-5378-b839-c24ca1e15434': {
+            'riskScore': 70,
+            'riskLevel': 'high',
+            'criticalLabs': 2,
+            'abnormalLabs': 18,
+            'deteriorating': False,
+            'primaryConcern': 'CHF exacerbation improving',
+            'alerts': ['BNP trending down', 'Diuresis effective'],
+            'trends': {'cardiac': 'improving', 'renal': 'stable', 'electrolytes': 'stable'},
+            'lastUpdate': '45 min ago',
+            'predictedDisposition': 'Continue diuresis',
+            'aiInsights': [
+                'Net negative 2L - target additional 1-2L',
+                'Creatinine stable despite diuresis',
+                'Consider GDMT optimization before discharge'
+            ]
+        },
+        'a2605b15-4f1b-5839-b4ce-fb7a6bc1005f': {
+            'riskScore': 82,
+            'riskLevel': 'critical',
+            'criticalLabs': 9,
+            'abnormalLabs': 26,
+            'deteriorating': True,
+            'primaryConcern': 'Hemorrhagic shock',
+            'alerts': ['Hgb dropping', 'Coagulopathy', 'MTP activated'],
+            'trends': {'hematologic': 'worsening', 'coagulation': 'worsening', 'vitals': 'unstable'},
+            'lastUpdate': '1 min ago',
+            'predictedDisposition': 'OR likely',
+            'aiInsights': [
+                'Hgb dropped 2g/dL in 2 hours - active bleeding',
+                'INR 2.5 - give FFP and vitamin K',
+                'Surgical consultation urgent'
+            ]
+        },
+        'e2beb281-c44f-579b-8211-a3749c549e92': {
+            'riskScore': 75,
+            'riskLevel': 'high',
+            'criticalLabs': 4,
+            'abnormalLabs': 20,
+            'deteriorating': False,
+            'primaryConcern': 'Post-MI monitoring',
+            'alerts': ['Troponin peaked', 'No new ECG changes'],
+            'trends': {'cardiac': 'stable', 'renal': 'stable', 'electrolytes': 'normal'},
+            'lastUpdate': '20 min ago',
+            'predictedDisposition': 'Cath lab tomorrow',
+            'aiInsights': [
+                'Troponin peak at 12 hours post-presentation',
+                'Dual antiplatelet therapy initiated',
+                'Echo shows EF 40% - consider ACE/ARB'
+            ]
+        },
+        '8adbf3e4-47ff-561e-b1b6-746ee32e056d': {
+            'riskScore': 68,
+            'riskLevel': 'high',
+            'criticalLabs': 3,
+            'abnormalLabs': 15,
+            'deteriorating': False,
+            'primaryConcern': 'Stroke recovery stable',
+            'alerts': ['PT/INR therapeutic', 'No hemorrhagic conversion'],
+            'trends': {'neurologic': 'stable', 'coagulation': 'therapeutic', 'metabolic': 'normal'},
+            'lastUpdate': '1 hour ago',
+            'predictedDisposition': 'Rehab evaluation',
+            'aiInsights': [
+                'INR 2.3 - therapeutic on warfarin',
+                'No signs of hemorrhagic transformation on repeat CT',
+                'Swallow evaluation pending'
+            ]
+        },
+        'dd2bf984-33c3-5874-8f68-84113327877e': {
+            'riskScore': 55,
+            'riskLevel': 'moderate',
+            'criticalLabs': 1,
+            'abnormalLabs': 12,
+            'deteriorating': False,
+            'primaryConcern': 'Multiple comorbidities stable',
+            'alerts': ['Diabetes controlled', 'HTN managed'],
+            'trends': {'metabolic': 'stable', 'cardiac': 'stable', 'renal': 'stable'},
+            'lastUpdate': '2 hours ago',
+            'predictedDisposition': 'Discharge planning',
+            'aiInsights': [
+                'A1c 7.2% - diabetes well controlled',
+                'Blood pressure at goal on current regimen',
+                'No acute issues - focus on discharge planning'
+            ]
+        }
+    }
+
+    # Build response with patient data
+    patients = []
+    for patient_id, intelligence in patient_intelligence.items():
+        if patient_id in data_store.get("Patient", {}):
+            patient = next((p for p in data_store["Patient"] if p.get('id') == patient_id), None)
+            if not patient:
+                continue
+
+            # Extract patient demographics
+            name = patient.get("name", [{}])[0]
+            given_name = name.get('given', [''])[0] if name.get('given') else ''
+            family_name = name.get('family', '')
+            display_name = f"{given_name} {family_name}".strip()
+            if not display_name:
+                display_name = f"Patient {patient_id[:8]}"
+
+            # Get age and gender
+            birth_date = patient.get("birthDate", "")
+            age = 2024 - int(birth_date[:4]) if birth_date and birth_date[:4].isdigit() else 65
+            gender = patient.get("gender", "unknown")
+
+            # Calculate recent lab velocity (simulated)
+            recent_labs = random.randint(5, 25)
+
+            # Get actual observation count for this patient
+            obs_count = len([o for o in data_store.get('Observation', [])
+                           if o.get('subject', {}).get('reference', '').endswith(f"/{patient_id}")][:100])
+
+            patients.append({
+                'id': patient_id,
+                'name': display_name,
+                'age': age,
+                'gender': gender,
+                'mrn': patient_id[:8].upper(),
+                'location': 'ICU-' + str(random.randint(1, 20)) if intelligence['riskLevel'] == 'critical' else 'Floor-' + str(random.randint(1, 50)),
+                'los': random.randint(1, 15),  # Length of stay in days
+                'intelligence': intelligence,
+                'recentLabCount': recent_labs,
+                'labVelocity': 'high' if recent_labs > 15 else 'moderate' if recent_labs > 8 else 'low'
+            })
+
+    # Sort by risk score
+    patients.sort(key=lambda x: x['intelligence']['riskScore'], reverse=True)
+
+    return {
+        'timestamp': datetime.utcnow().isoformat(),
+        'totalPatients': len(patients),
+        'criticalCount': len([p for p in patients if p['intelligence']['riskLevel'] == 'critical']),
+        'highRiskCount': len([p for p in patients if p['intelligence']['riskLevel'] == 'high']),
+        'moderateRiskCount': len([p for p in patients if p['intelligence']['riskLevel'] == 'moderate']),
+        'deterioratingCount': len([p for p in patients if p['intelligence']['deteriorating']]),
+        'patients': patients
+    }
+
 if __name__ == "__main__":
     print("\n" + "="*60)
     print("Oracle Health Millennium FHIR R4 API Simulator")
