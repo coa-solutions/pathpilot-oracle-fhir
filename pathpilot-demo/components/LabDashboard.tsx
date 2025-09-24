@@ -11,9 +11,13 @@ import LabTrendChart from './LabTrendChart';
 import LabCard from './LabCard';
 import { Activity, FileText, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 
-export default function LabDashboard() {
+interface LabDashboardProps {
+  initialPatientId?: string;
+}
+
+export default function LabDashboard({ initialPatientId }: LabDashboardProps = {}) {
   const [currentPatientId, setCurrentPatientId] = useState<string>(
-    process.env.NEXT_PUBLIC_DEFAULT_PATIENT_ID || '77e10fd0-6a1c-5547-a130-fae1341acf36'
+    initialPatientId || process.env.NEXT_PUBLIC_DEFAULT_PATIENT_ID || '77e10fd0-6a1c-5547-a130-fae1341acf36'
   );
   const [patient, setPatient] = useState<Patient | null>(null);
   const [labResults, setLabResults] = useState<LabResult[]>([]);
@@ -70,43 +74,47 @@ export default function LabDashboard() {
   const summary = LabProcessor.getRecentLabsSummary(labResults);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Activity className="w-8 h-8 text-blue-600" />
-                PathPilot Lab Dashboard
-              </h1>
-              <p className="text-gray-600 mt-1">Pathology & Lab Intelligence Companion</p>
+    <div className={!initialPatientId ? "min-h-screen bg-gray-50" : ""}>
+      {/* Header - Only show if not in single patient mode */}
+      {!initialPatientId && (
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                  <Activity className="w-8 h-8 text-blue-600" />
+                  PathPilot Lab Dashboard
+                </h1>
+                <p className="text-gray-600 mt-1">Pathology & Lab Intelligence Companion</p>
+              </div>
+              <button
+                onClick={() => fetchData(currentPatientId, true)}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </button>
             </div>
-            <button
-              onClick={() => fetchData(currentPatientId, true)}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content Area with Sidebar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Patient List Sidebar */}
-          <div className="lg:col-span-1">
-            <PatientList
-              currentPatientId={currentPatientId}
-              onPatientSelect={handlePatientChange}
-            />
-          </div>
+        <div className={`grid grid-cols-1 ${!initialPatientId ? 'lg:grid-cols-4' : ''} gap-6`}>
+          {/* Patient List Sidebar - Only show if not in single patient mode */}
+          {!initialPatientId && (
+            <div className="lg:col-span-1">
+              <PatientList
+                currentPatientId={currentPatientId}
+                onPatientSelect={handlePatientChange}
+              />
+            </div>
+          )}
 
           {/* Main Dashboard Content */}
-          <div className="lg:col-span-3">
+          <div className={!initialPatientId ? "lg:col-span-3" : ""}>
             {/* Patient Header */}
             <PatientHeader patient={patient} loading={loading} />
 
