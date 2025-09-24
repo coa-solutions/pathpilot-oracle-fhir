@@ -152,6 +152,8 @@ async def capability_statement():
         }]
     }
 
+# Patient Intelligence endpoint - MUST come before generic routes
+
 # Generic resource endpoints
 @app.get("/{resource_type}")
 async def get_resources(
