@@ -136,7 +136,12 @@ app = FastAPI(
 # Enable CORS for browser testing
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "*",  # Allow all origins in development
+        "https://*.vercel.app",  # Vercel preview deployments
+        "http://localhost:3000",  # Local development
+        "https://pathpilot-alpha.vercel.app",  # Production Vercel domain
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
